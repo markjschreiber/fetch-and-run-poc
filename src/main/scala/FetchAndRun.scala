@@ -64,7 +64,7 @@ object FetchAndRun extends App {
   val batchClient = AWSBatchClient.builder.build
 
   //the name of the definition
-  val jobDefinitionName = "00000001_fetch_and_run"
+  val jobDefinitionName = "00000002_fetch_and_run"
 
   //is there an active definition of the same name?
   val jobDefinitionRequest = new DescribeJobDefinitionsRequest()
@@ -98,12 +98,6 @@ object FetchAndRun extends App {
             .withMountPoints( new MountPoint().withReadOnly(true)
                                               .withSourceVolume("awsCliHome")
                                               .withContainerPath("/usr/local/aws-cli"))
-            //mount the aws command so that the fetch and run script can see it
-            .withVolumes( new Volume().withName("awsCliExecutable")
-                                      .withHost(new Host().withSourcePath("/usr/local/bin/aws")))
-            .withMountPoints( new MountPoint().withReadOnly(true)
-                                              .withSourceVolume("awsCliExecutable")
-                                              .withContainerPath("/usr/local/bin/aws"))
             //the command the container should run
             .withCommand("/var/scratch/fetch_and_run.sh")
         )
