@@ -25,7 +25,7 @@ object FetchAndRun extends App {
     The script that we want the container to run. The script will be written to S3 and then the fetch_and_run.sh
     script will pull it from s3 and run it
    */
-  val commandScript = "#!/bin/bash\necho \"Hello World\""
+  val commandScript = "#!/bin/bash\n\ndate\necho \"Args: $@\"\nenv\necho \"This is my simple test job!.\"\necho \"jobId: $AWS_BATCH_JOB_ID\"\nsleep $1\ndate\necho \"bye bye!!\""
 
   //the role for the job permissions
   val jobRoleArn = "arn:aws:iam::149209198963:role/batchJobRole"
@@ -64,7 +64,7 @@ object FetchAndRun extends App {
   val batchClient = AWSBatchClient.builder.build
 
   //the name of the definition
-  val jobDefinitionName = "aaa1_fetch_and_run"
+  val jobDefinitionName = "aaa9_fetch_and_run"
 
   //is there an active definition of the same name?
   val jobDefinitionRequest = new DescribeJobDefinitionsRequest()
@@ -88,11 +88,29 @@ object FetchAndRun extends App {
             .withVcpus( jobDefinitionVCPU )
             // mount the fetch and run script. The script is made available by the launch template user data
             .withVolumes( new Volume().withName("fetchAndRunScript")
-                                      .withHost( new Host().withSourcePath("/usr/local/bin")))
+                                      .withHost( new Host().withSourcePath("/usr/local/bin/fetch_and_run.sh")))
             .withMountPoints( new MountPoint().withReadOnly(true)
                                               .withSourceVolume("fetchAndRunScript")
-                                              .withContainerPath("/var/scratch/"))
-            //todo mount the aws cli so the container can access it
+                                              .withContainerPath("/var/scratch/fetch_and_run.sh"))
+            //mount the aws cli v2 distribution so the container can access it
+            .withVolumes( new Volume().withName( "awsCliHome")
+                                      .withHost( new Host().withSourcePath( "/usr/local/aws-cli")))
+            .withMountPoints( new MountPoint().withReadOnly(true)
+                                              .withSourceVolume("awsCliHome")
+                                              .withContainerPath("/usr/local/aws-cli"))
+            //mount the aws command so that the fetch and run script can see it
+            .withVolumes( new Volume().withName("awsCliExecutable")
+                                      .withHost(new Host().withSourcePath("/usr/local/bin/aws")))
+            .withMountPoints( new MountPoint().withReadOnly(true)
+                                              .withSourceVolume("awsCliExecutable")
+                                              .withContainerPath("/usr/local/bin/aws"))
+            // currently the fetch and run script will fail without access to unzip
+            .withVolumes( new Volume().withName("unzipExecutable" )
+                                      .withHost( new Host().withSourcePath("/usr/bin/unzip")))
+            .withMountPoints( new MountPoint().withReadOnly(true)
+                                              .withSourceVolume("unzipExecutable")
+                                              .withContainerPath("/usr/bin/unzip"))
+            //the command the container should run
             .withCommand("/var/scratch/fetch_and_run.sh")
         )
     val jobRegistrationResult = batchClient.registerJobDefinition(registerJobDefinitionRequest)
