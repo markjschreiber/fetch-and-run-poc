@@ -17,6 +17,7 @@
 
 PATH="/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
 BASENAME="${0##*/}"
+AWS="/usr/local/aws-cli/v2/current/bin/aws"
 
 usage () {
   if [ "${#@}" -ne 0 ]; then
@@ -61,8 +62,7 @@ if [ "${scheme}" != "s3" ]; then
 fi
 
 # Check that necessary programs are available
-which aws >/dev/null 2>&1 || error_exit "Unable to find AWS CLI executable."
-which unzip >/dev/null 2>&1 || error_exit "Unable to find unzip executable."
+which "${AWS}" >/dev/null 2>&1 || error_exit "Unable to find AWS CLI executable."
 
 # Create a temporary directory to hold the downloaded contents, and make sure
 # it's removed later, unless the user set KEEP_BATCH_FILE_CONTENTS.
@@ -83,7 +83,7 @@ install -m 0600 /dev/null "${TMPFILE}" || error_exit "Failed to create temp file
 # Fetch and run a script
 fetch_and_run_script () {
   # Create a temporary file and download the script
-  aws s3 cp "${BATCH_FILE_S3_URL}" - > "${TMPFILE}" || error_exit "Failed to download S3 script."
+  "${AWS}" s3 cp "${BATCH_FILE_S3_URL}" - > "${TMPFILE}" || error_exit "Failed to download S3 script."
 
   # Make the temporary file executable and run it with any given arguments
   local script="./${1}"; shift
@@ -93,8 +93,11 @@ fetch_and_run_script () {
 
 # Download a zip and run a specified script from inside
 fetch_and_run_zip () {
+  # Check that necessary programs are available
+  which unzip >/dev/null 2>&1 || error_exit "Unable to find unzip executable."
+
   # Create a temporary file and download the zip file
-  aws s3 cp "${BATCH_FILE_S3_URL}" - > "${TMPFILE}" || error_exit "Failed to download S3 zip file from ${BATCH_FILE_S3_URL}"
+  "${AWS}" s3 cp "${BATCH_FILE_S3_URL}" - > "${TMPFILE}" || error_exit "Failed to download S3 zip file from ${BATCH_FILE_S3_URL}"
 
   # Create a temporary directory and unpack the zip file
   cd "${TMPDIR}" || error_exit "Unable to cd to temporary directory."
