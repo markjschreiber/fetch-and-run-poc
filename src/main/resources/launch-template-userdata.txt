@@ -11,17 +11,18 @@ packages:
 - sed
 - wget
 - amazon-ssm-agent
+- unzip
 
 runcmd:
-- pip install -U awscli boto3
 - scratchPath="/cromwell_root"
 - artifactRootUrl="https://s3.amazonaws.com/aws-genomics-workflows/artifacts"
 - start amazon-ssm-agent
 
+- cd /tmp && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && sudo ./aws/install
 - cd /opt && wget $artifactRootUrl/aws-ebs-autoscale.tgz && tar -xzf aws-ebs-autoscale.tgz
 - sh /opt/ebs-autoscale/bin/init-ebs-autoscale.sh $scratchPath /dev/sdc  2>&1 > /var/log/init-ebs-autoscale.log
 - cd /opt && wget $artifactRootUrl/aws-ecs-additions.tgz && tar -xzf aws-ecs-additions.tgz
 - sh /opt/ecs-additions/ecs-additions-cromwell.sh
-- cd /usr/local/bin && wget https://raw.githubusercontent.com/awslabs/aws-batch-helpers/master/fetch-and-run/fetch_and_run.sh && chmod a+x ./fetch_and_run.sh
+- cd /usr/local/bin && wget https://raw.githubusercontent.com/markjschreiber/fetch-and-run-poc/master/src/main/resources/fetch_and_run.sh && chmod a+x ./fetch_and_run.sh
 
 --==BOUNDARY==--
